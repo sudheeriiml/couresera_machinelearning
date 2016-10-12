@@ -1,0 +1,133 @@
+---
+title: "MachineLearningProjectAnalysis"
+author: "Sudheer"
+date: "October 12, 2016"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries 
+
+Load the required libraries in current session 
+
+```{r library}
+library(RCurl)
+library(rpart) # Regressive Partitioning and Regression trees
+library(rpart.plot) # Decision Tree plot
+library(caret)
+library(randomForest)
+```
+
+## Download the training and test data
+
+Load training data and test data using url given in assignment 
+
+```{r download_data}
+#Download the data
+#train_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-train.csv"
+#test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+trainingset <- read.csv("pml-training.csv", na.strings=c("", "NA"))
+testingset <- read.csv("pml-testing.csv", na.strings=c("", "NA"))
+```
+
+## Check dimension of data
+
+Check dimensions of data
+
+```{r check_data}
+# Check dimensions for number of variables and number of observations
+#head(trainingset)
+#head(testingset)
+dim(trainingset)
+dim(testingset)
+
+```
+
+## Clean the data
+
+Remove redundant columns inside data
+
+```{r clean_data}
+# Delete columns with all missing values
+trainingset<-trainingset[,colSums(is.na(trainingset)) == 0]
+testingset <-testingset[,colSums(is.na(testingset)) == 0]
+
+# Some variables are irrelevant to our current project: user_name, raw_timestamp_part_1, raw_timestamp_part_,2 cvtd_timestamp, new_window, and  num_window (columns 1 to 7). We can delete these variables.
+trainingset   <-trainingset[,-c(1:7)]
+testingset <-testingset[,-c(1:7)]
+```
+
+
+Check dimensions after cleaning of data
+
+```{r check_afterCleaning_data}
+dim(trainingset)
+dim(testingset)
+
+```
+
+
+
+## Divide the data into training and test data 
+
+Create subtraining and sampling set 
+
+```{r divide_data}
+subsamples <- createDataPartition(y=trainingset$classe, p=0.75, list=FALSE)
+subTraining <- trainingset[subsamples, ] 
+subTesting <- trainingset[-subsamples, ]
+dim(subTraining)
+dim(subTesting)
+
+```
+
+
+Check class distribution
+
+```{r check_class_distr}
+plot(subTraining$classe, col="blue", main="Bar Plot of levels of the variable classe within the subTraining data set", xlab="classe levels", ylab="Frequency")
+
+```
+
+
+##Modellling using decision treee
+
+```{r decision_tree}
+
+model1 <- rpart(classe ~ ., data=subTraining, method="class")
+# Predicting:
+prediction1 <- predict(model1, subTesting, type = "class")
+# Plot of the Decision Tree
+rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+confusionMatrix(prediction1, subTesting$classe)
+
+
+```
+
+
+##Modellling using random forest
+
+```{r random_forest}
+
+model2 <- randomForest(classe ~. , data=subTraining, method="class")
+# Predicting:
+prediction2 <- predict(model2, subTesting, type = "class")
+# Test results on subTesting data set:
+confusionMatrix(prediction2, subTesting$classe)
+
+```
+
+##Final Prediction 
+
+```{r final_prediction}
+
+predictfinal <- predict(model2, testingset, type="class")
+predictfinal
+
+```
+
+
